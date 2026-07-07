@@ -125,12 +125,12 @@ const UPGRADE_COLORS = ['#4ecdc4','#44bd32','#f39c12','#e67e22','#e74c3c','#9b59
 
 const POWERUP_TYPES = {
   LIFE:   { id: 'life',   label: '💚', color: '#2ecc71', weight: 20 },
-  BOMB:   { id: 'bomb',   label: '💣', color: '#e74c3c', weight: 25 },
+  SHIELD: { id: 'shield', label: '🛡️', color: '#00c8ff', weight: 25 },
   FREEZE: { id: 'freeze', label: '❄️', color: '#64c8ff', weight: 20 },
   SPEED:  { id: 'speed',  label: '⚡', color: '#ffc800', weight: 15 },
   RAPID:  { id: 'rapid',  label: '🔥', color: '#ff6400', weight: 20 },
 };
-const POWERUP_KEYS = ['LIFE','BOMB','FREEZE','SPEED','RAPID'];
+const POWERUP_KEYS = ['LIFE','SHIELD','FREEZE','SPEED','RAPID'];
 
 // Enemy tiers: unlocked at level thresholds
 const ENEMY_TYPES = {
@@ -173,7 +173,7 @@ function randomPowerupType() {
   for (const k of POWERUP_KEYS) total += POWERUP_TYPES[k].weight;
   let r = Math.random() * total;
   for (const k of POWERUP_KEYS) { r -= POWERUP_TYPES[k].weight; if (r <= 0) return POWERUP_TYPES[k]; }
-  return POWERUP_TYPES.BOMB;
+  return POWERUP_TYPES.SHIELD;
 }
 
 function xpForLevel(lv) { return XP_THRESHOLDS[lv - 1]; }
@@ -459,8 +459,8 @@ class FloatingText {
     const alpha=p<0.3?p/0.3:1;
     const scale=1+(1-p)*0.4;
     ctx.save();ctx.globalAlpha=alpha;ctx.translate(this.x,this.y);ctx.scale(scale,scale);
-    ctx.font='bold 48px "Courier New","SimHei",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor=this.color;ctx.shadowBlur=10;
+    ctx.font='bold 48px "Microsoft YaHei","SimHei","PingFang SC",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor=this.color;ctx.shadowBlur=12;
     ctx.fillStyle=this.color;ctx.fillText(this.text,0,0);
     ctx.restore();
   }
@@ -630,6 +630,10 @@ function updateUI(){
   if(freezeTimer>0){buffEl.className+=' buff-freeze active';buffEl.textContent='❄️ 冰冻 '+Math.ceil(freezeTimer/60)+'s';}
   else if(speedBoostTimer>0){buffEl.className+=' buff-speed active';buffEl.textContent='⚡ 加速 '+Math.ceil(speedBoostTimer/60)+'s';}
   else if(rapidFireTimer>0){buffEl.className+=' buff-rapid active';buffEl.textContent='🔥 速射 '+Math.ceil(rapidFireTimer/60)+'s';}
+  else if(player&&player.active&&player.isInvincible()&&!gameOver){
+    const sec=Math.ceil((player.invincibleUntil-Date.now())/1000);
+    if(sec>0){buffEl.className+=' buff-shield active';buffEl.textContent='🛡️ 护盾 '+sec+'s';}
+  }
 
   const msgEl=document.getElementById('statusMsg');
   if(gameOver&&lives<=0){msgEl.textContent='游戏结束！按 Enter 重新开始';msgEl.style.color='#e94560';}
@@ -641,7 +645,7 @@ function updateUI(){
 function applyPowerup(type){
   switch(type.id){
     case'life':if(lives<5)lives++;break;
-    case'bomb':enemies.forEach(e=>{if(e.active){e.active=false;createExplosion(e.x+e.w/2,e.y+e.h/2,true);score+=100;addXP(e.xpValue);spawnPowerupAt(e.x+e.w/2,e.y+e.h/2);}});break;
+    case'shield':if(player&&player.active)player.invincibleUntil=Date.now()+3000;break;
     case'freeze':freezeTimer=360;break;
     case'speed':speedBoostTimer=540;break;
     case'rapid':rapidFireTimer=540;break;
