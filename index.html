@@ -140,11 +140,13 @@ const ENEMY_TYPES = {
   HEAVY:  { id:'heavy',  label:'重型', color:'#c0392b', hp:3, speed:0.6, shootDelay:120,xp:400, size:1.3, weight:100 },
 };
 
-// Which enemy types are available at each level
+// Which enemy types are available at each game level
 function availableEnemyTypes(){
-  if(level>=6) return ['NORMAL','FAST','ARMORED','HEAVY'];
-  if(level>=5) return ['NORMAL','FAST','ARMORED'];
-  if(level>=3) return ['NORMAL','FAST'];
+  // Also consider player upgrade: higher player = tougher mix
+  const lv = level + Math.floor(playerUpgrade / 2);
+  if(lv >= 6) return ['NORMAL','FAST','ARMORED','HEAVY'];
+  if(lv >= 4) return ['NORMAL','FAST','ARMORED'];
+  if(lv >= 2) return ['NORMAL','FAST'];
   return ['NORMAL'];
 }
 
@@ -152,12 +154,14 @@ function pickEnemyType(){
   const keys=availableEnemyTypes();
   let total=0;
   for(const k of keys) total+=ENEMY_TYPES[k].weight;
-  // HEAVY is rarer (half weight) even when available
-  if(keys.includes('HEAVY')) total-=ENEMY_TYPES.HEAVY.weight*0.5;
+  // HEAVY is rarer (half weight), ARMORED slightly less common
+  if(keys.includes('HEAVY')) total-=ENEMY_TYPES.HEAVY.weight*0.6;
+  if(keys.includes('ARMORED')) total-=ENEMY_TYPES.ARMORED.weight*0.2;
   let r=Math.random()*total;
   for(const k of keys){
     let w=ENEMY_TYPES[k].weight;
-    if(k==='HEAVY') w*=0.5;
+    if(k==='HEAVY') w*=0.4;
+    else if(k==='ARMORED') w*=0.8;
     r-=w;
     if(r<=0) return ENEMY_TYPES[k];
   }
@@ -179,14 +183,27 @@ function addXP(amount) {
   xp += amount;
   while (playerUpgrade < 8 && xp >= XP_THRESHOLDS[playerUpgrade]) {
     playerUpgrade++;
-    if (player && player.active) {
-      player.color = UPGRADE_COLORS[playerUpgrade - 1];
-      player.speed = 2.5 + (playerUpgrade - 1) * 0.4;
-      player.shootDelay = Math.max(8, 20 - (playerUpgrade - 1) * 2);
-      player.maxBullets = playerUpgrade >= 3 ? (playerUpgrade >= 6 ? 3 : 2) : 1;
-    }
+    applyUpgradeStats();
   }
   updateUI();
+}
+
+function loseUpgrade(){
+  if(playerUpgrade<=1)return;
+  playerUpgrade--;
+  // Set XP to the base of current level
+  xp = XP_THRESHOLDS[playerUpgrade - 1];
+  applyUpgradeStats();
+  updateUI();
+}
+
+function applyUpgradeStats(){
+  if(player && player.active){
+    player.color = UPGRADE_COLORS[playerUpgrade - 1];
+    player.speed = 2.5 + (playerUpgrade - 1) * 0.4;
+    player.shootDelay = Math.max(8, 20 - (playerUpgrade - 1) * 2);
+    player.maxBullets = playerUpgrade >= 6 ? 3 : playerUpgrade >= 3 ? 2 : 1;
+  }
 }
 
 // ---- INPUT ----
@@ -392,13 +409,21 @@ class Tank {
     ctx.fillStyle=this.isPlayer?'#66ff66':'#ff9999';
     ctx.fillRect(-3,-bh/2-10,6,14);
 
+    // Type label for non-normal enemies
+    if(!this.isPlayer&&this.enemyType&&this.enemyType.id!=='normal'){
+      ctx.fillStyle='#fff';
+      ctx.font='bold 9px "Courier New"';
+      ctx.textAlign='center';
+      ctx.fillText(this.enemyType.label,0,-bh/2-12);
+    }
+
     // HP bar for multi-HP enemies
     if(!this.isPlayer&&this.maxHp>1){
       const hpW=bw*0.8, hpH=3;
       ctx.fillStyle='#333';
-      ctx.fillRect(-hpW/2,-bh/2-6,hpW,hpH);
+      ctx.fillRect(-hpW/2,-bh/2-5,hpW,hpH);
       ctx.fillStyle=this.hp===this.maxHp?'#2ecc71':this.hp===2?'#f39c12':'#e74c3c';
-      ctx.fillRect(-hpW/2,-bh/2-6,hpW*(this.hp/this.maxHp),hpH);
+      ctx.fillRect(-hpW/2,-bh/2-5,hpW*(this.hp/this.maxHp),hpH);
     }
 
     // Center
@@ -433,7 +458,7 @@ class Powerup {
 function createExplosion(x,y,big=false){explosions.push(new Explosion(x+TILE/2,y+TILE/2,big));}
 
 function spawnPowerupAt(x,y){
-  if(Math.random()>0.15)return; // 15% drop chance from enemy kills
+  if(Math.random()>0.2)return; // 20% drop chance from enemy kills
   powerups.push(new Powerup(x,y,randomPowerupType()));
 }
 
@@ -470,11 +495,10 @@ function createPlayer(){
 
 function onBaseDestroyed(){
   lives--;
+  loseUpgrade();
   updateUI();
   if(lives<=0){gameOver=true;gameRunning=false;return;}
-  // Regenerate base after 1.5 seconds
   baseRegenTimer=90;
-  // Respawn player with invincibility
   player.active=false;
   createExplosion(player.x,player.y,true);
   setTimeout(()=>{if(!gameOver){player=createPlayer();}},1000);
@@ -499,14 +523,38 @@ function updateEnemyAI(enemy){
 
 function spawnEnemy(){
   if(totalEnemiesSpawned>=enemiesPerLevel||enemies.filter(e=>e.active).length>=maxEnemiesOnScreen)return;
-  const sps=[{x:TILE*1+2,y:TILE*1+2},{x:TILE*9+2,y:TILE*1+2},{x:TILE*17+2,y:TILE*1+2}];
-  const sp=sps[Math.floor(Math.random()*sps.length)];
+
+  // Diverse spawn points: top, left side, right side
+  const sps=[
+    {x:TILE*3+2, y:TILE*1+2},   // top left
+    {x:TILE*9+2, y:TILE*1+2},   // top center
+    {x:TILE*15+2,y:TILE*1+2},   // top right
+    {x:TILE*1+2, y:TILE*5+2},   // left side
+    {x:TILE*1+2, y:TILE*9+2},   // left mid
+    {x:TILE*18+2,y:TILE*5+2},   // right side
+    {x:TILE*18+2,y:TILE*9+2},   // right mid
+  ];
+  // Filter out spawns blocked by map tiles
+  const valid=sps.filter(sp=>{
+    const tr={x:sp.x,y:sp.y,w:TILE-4,h:TILE-4};
+    return !rectCollidesMap(tr);
+  });
+  if(valid.length===0)return;
+  const sp=valid[Math.floor(Math.random()*valid.length)];
+
   const type=pickEnemyType();
   const s=type.size;
+  // Centered spawn adjusted by size
+  const halfExtra=((TILE-4)*s-(TILE-4))/2;
+  const sx=sp.x-halfExtra;
+  const sy=sp.y-halfExtra;
   const bw=(TILE-4)*s, bh=(TILE-4)*s;
-  const bigTr={x:sp.x-(bw-(TILE-4))/2,y:sp.y-(bh-(TILE-4))/2,w:bw,h:bh};
+  const bigTr={x:sx,y:sy,w:bw,h:bh};
+  // Check no tank overlap AND no map collision
+  if(rectCollidesMap(bigTr))return;
   if([player,...enemies].filter(t=>t&&t.active).some(t=>rectsOverlap(bigTr,t.getRect())))return;
-  const e=new Tank(sp.x,sp.y,DIR_DOWN,type.color,false,type);
+
+  const e=new Tank(sx,sy,DIR_DOWN,type.color,false,type);
   e.hp=type.hp; e.maxHp=type.hp;
   e.speed=type.speed+level*0.08+Math.random()*0.3;
   e.shootDelay=Math.max(20,type.shootDelay-level*4);
@@ -648,7 +696,7 @@ function update(){
       if(player&&player.active&&bullet.active&&rectsOverlap(bullet.getRect(),player.getRect())){
         if(player.isInvincible()){bullet.active=false;return;}
         bullet.active=false;player.active=false;createExplosion(player.x,player.y,true);
-        lives--;updateUI();
+        lives--;loseUpgrade();updateUI();
         if(lives<=0){gameOver=true;gameRunning=false;}
         else{setTimeout(()=>{if(!gameOver)player=createPlayer();},1000);}
       }
