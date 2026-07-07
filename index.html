@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>坦克大战 - Tank Battle</title>
+<meta http-equiv="Cache-Control" content="no-cache">
+<title>坦克大战 - Tank Battle v2</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -452,16 +453,33 @@ class FloatingText {
     this.x=x;this.y=y;this.text=text;this.color=color;
     this.life=duration;this.maxLife=duration;
   }
-  update(){this.life--;this.y-=0.6;}
+  update(){this.life--;this.y-=0.5;}
   get active(){return this.life>0;}
   draw(ctx){
     const p=this.life/this.maxLife;
-    const alpha=p<0.3?p/0.3:1;
-    const scale=1+(1-p)*0.4;
-    ctx.save();ctx.globalAlpha=alpha;ctx.translate(this.x,this.y);ctx.scale(scale,scale);
-    ctx.font='bold 48px "Microsoft YaHei","SimHei","PingFang SC",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor=this.color;ctx.shadowBlur=12;
-    ctx.fillStyle=this.color;ctx.fillText(this.text,0,0);
+    const alpha=p<0.25?p/0.25:1;
+    const scale=1+(1-p)*0.6;
+    const wobble=Math.sin(Date.now()/150)*3*(1-p);
+    ctx.save();
+    ctx.globalAlpha=alpha*0.9;
+    ctx.translate(this.x+wobble,this.y);
+    ctx.scale(scale,scale);
+
+    // Outer glow
+    ctx.shadowColor='#44ff44';ctx.shadowBlur=20;
+    // Stroke outline
+    ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=4;
+    ctx.font='bold 56px "Microsoft YaHei","SimHei","PingFang SC",sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.strokeText(this.text,0,0);
+
+    // Gradient fill
+    const grad=ctx.createLinearGradient(0,-28,0,28);
+    grad.addColorStop(0,'#aaffaa');grad.addColorStop(0.5,'#44ff44');grad.addColorStop(1,'#22cc22');
+    ctx.fillStyle=grad;
+    ctx.shadowBlur=8;
+    ctx.fillText(this.text,0,0);
+
     ctx.restore();
   }
 }
