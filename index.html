@@ -171,17 +171,13 @@ function getLevelMap(n) {
   // Border walls
   for (let c = 0; c < COLS; c++) { m[0][c] = TILE_STEEL; m[ROWS-1][c] = TILE_STEEL; }
   for (let r = 0; r < ROWS; r++) { m[r][0] = TILE_STEEL; m[r][COLS-1] = TILE_STEEL; }
-  // Base
+  // Base (protected by steel walls)
   m[ROWS-2][9] = TILE_BASE;
   m[ROWS-2][10] = TILE_BASE;
   m[ROWS-3][9] = TILE_STEEL;
   m[ROWS-3][10] = TILE_STEEL;
   m[ROWS-2][8] = TILE_STEEL;
   m[ROWS-2][11] = TILE_STEEL;
-  m[ROWS-1][9] = TILE_STEEL;
-  m[ROWS-1][10] = TILE_STEEL;
-  m[ROWS-1][8] = TILE_STEEL;
-  m[ROWS-1][11] = TILE_STEEL;
 
   // Different brick layouts per level
   const layouts = [
@@ -503,7 +499,7 @@ function resetGame() {
   enemySpawnTimer = 0;
   map = getLevelMap(level);
   // Place player near bottom center
-  player = new Tank(TILE * 9 + 2, TILE * 15 + 2, DIR_UP, '#4ecdc4', true);
+  player = new Tank(TILE * 9 + 2, TILE * 13 + 2, DIR_UP, '#4ecdc4', true);
   updateUI();
 }
 
@@ -517,7 +513,7 @@ function nextLevel() {
   explosions = [];
   enemySpawnTimer = 0;
   map = getLevelMap(level);
-  player = new Tank(TILE * 9 + 2, TILE * 15 + 2, DIR_UP, '#4ecdc4', true);
+  player = new Tank(TILE * 9 + 2, TILE * 13 + 2, DIR_UP, '#4ecdc4', true);
   updateUI();
 }
 
@@ -626,7 +622,7 @@ function update() {
           // Respawn player
           setTimeout(() => {
             if (!gameOver) {
-              player = new Tank(TILE * 9 + 2, TILE * 15 + 2, DIR_UP, '#4ecdc4', true);
+              player = new Tank(TILE * 9 + 2, TILE * 13 + 2, DIR_UP, '#4ecdc4', true);
             }
           }, 1000);
         }
@@ -766,7 +762,7 @@ function draw() {
 
 // Initialize
 map = getLevelMap(1);
-player = new Tank(TILE * 9 + 2, TILE * 15 + 2, DIR_UP, '#4ecdc4', true);
+player = new Tank(TILE * 9 + 2, TILE * 13 + 2, DIR_UP, '#4ecdc4', true);
 updateUI();
 gameLoop();
 </script>
