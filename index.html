@@ -136,8 +136,8 @@ const POWERUP_KEYS = ['LIFE','BOMB','FREEZE','SPEED','RAPID'];
 const ENEMY_TYPES = {
   NORMAL: { id:'normal', label:'普通', color:'#e94560', hp:1, speed:1.0, shootDelay:80, xp:100, size:1, weight:100 },
   FAST:   { id:'fast',   label:'快速', color:'#f39c12', hp:1, speed:1.8, shootDelay:60, xp:150, size:1, weight:100 },
-  ARMORED:{ id:'armored',label:'装甲', color:'#8e44ad', hp:2, speed:0.8, shootDelay:100,xp:250, size:1.15, weight:100 },
-  HEAVY:  { id:'heavy',  label:'重型', color:'#c0392b', hp:3, speed:0.6, shootDelay:120,xp:400, size:1.3, weight:100 },
+  ARMORED:{ id:'armored',label:'装甲', color:'#8e44ad', hp:4, speed:0.8, shootDelay:100,xp:350, size:1.15, weight:100 },
+  HEAVY:  { id:'heavy',  label:'重型', color:'#c0392b', hp:6, speed:0.6, shootDelay:120,xp:600, size:1.3, weight:100 },
 };
 
 // Which enemy types are available at each game level
@@ -422,7 +422,8 @@ class Tank {
       const hpW=bw*0.8, hpH=3;
       ctx.fillStyle='#333';
       ctx.fillRect(-hpW/2,-bh/2-5,hpW,hpH);
-      ctx.fillStyle=this.hp===this.maxHp?'#2ecc71':this.hp===2?'#f39c12':'#e74c3c';
+      const ratio=this.hp/this.maxHp;
+      ctx.fillStyle=ratio>0.5?'#2ecc71':ratio>0.25?'#f39c12':'#e74c3c';
       ctx.fillRect(-hpW/2,-bh/2-5,hpW*(this.hp/this.maxHp),hpH);
     }
 
