@@ -460,9 +460,9 @@ function spawnEnemy() {
   if (totalEnemiesSpawned >= enemiesPerLevel || enemies.filter(e => e.active).length >= maxEnemiesOnScreen) return;
 
   const spawnPoints = [
-    { x: TILE * 1 + 2, y: TILE * 0 + 2 },
-    { x: TILE * 9 + 2, y: TILE * 0 + 2 },
-    { x: TILE * 17 + 2, y: TILE * 0 + 2 },
+    { x: TILE * 1 + 2, y: TILE * 1 + 2 },
+    { x: TILE * 9 + 2, y: TILE * 1 + 2 },
+    { x: TILE * 17 + 2, y: TILE * 1 + 2 },
   ];
   const sp = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
 
