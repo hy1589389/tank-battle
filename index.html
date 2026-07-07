@@ -138,6 +138,11 @@ document.addEventListener('keydown', e => {
   e.preventDefault();
 });
 document.addEventListener('keyup', e => { keys[e.key] = false; e.preventDefault(); });
+canvas.addEventListener('click', () => {
+  if (gameOver) resetGame();
+  else { gamePaused = !gamePaused; if (!gameRunning) gameRunning = true; }
+  updateUI();
+});
 
 // Entities
 let player = null;
@@ -722,12 +727,22 @@ function draw() {
     // Brief flash on respawn - handled by setTimeout making player null briefly
   }
 
-  // Draw overlay messages
-  if (!gameRunning || gamePaused) {
+  // Draw overlay only when paused (not when waiting to start)
+  if (gamePaused && !gameOver) {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+  // Show start hint on canvas
+  if (!gameRunning && !gameOver && !gamePaused) {
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.font = 'bold 22px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.fillText('按 Enter 或 点击画面 开始', canvas.width/2, canvas.height/2 + 60);
+    ctx.textAlign = 'start';
+  }
   if (gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 40px "Courier New"';
     ctx.textAlign = 'center';
