@@ -112,7 +112,7 @@ let xp = 0, playerUpgrade = 1;
 let freezeTimer = 0, speedBoostTimer = 0, rapidFireTimer = 0;
 let baseRegenTimer = 0;
 
-let player = null, enemies = [], bullets = [], explosions = [], powerups = [], map = [];
+let player = null, enemies = [], bullets = [], explosions = [], powerups = [], floatingTexts = [], map = [];
 
 // ---- CONSTANTS ----
 const TILE_EMPTY = 0, TILE_BRICK = 1, TILE_STEEL = 2, TILE_BASE = 3, TILE_WALL = 4;
@@ -447,6 +447,25 @@ class Explosion {
   draw(ctx){const p=1-this.life/this.maxLife;const r=(this.maxLife>15?28:18)*p;const a=1-p;ctx.save();ctx.globalAlpha=a;ctx.fillStyle='#ff6600';ctx.beginPath();ctx.arc(this.x,this.y,r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffcc00';ctx.beginPath();ctx.arc(this.x,this.y,r*0.6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(this.x,this.y,r*0.3,0,Math.PI*2);ctx.fill();ctx.restore();}
 }
 
+class FloatingText {
+  constructor(x,y,text,color,duration=150){
+    this.x=x;this.y=y;this.text=text;this.color=color;
+    this.life=duration;this.maxLife=duration;
+  }
+  update(){this.life--;this.y-=0.6;}
+  get active(){return this.life>0;}
+  draw(ctx){
+    const p=this.life/this.maxLife;
+    const alpha=p<0.3?p/0.3:1;
+    const scale=1+(1-p)*0.4;
+    ctx.save();ctx.globalAlpha=alpha;ctx.translate(this.x,this.y);ctx.scale(scale,scale);
+    ctx.font='bold 48px "Courier New","SimHei",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor=this.color;ctx.shadowBlur=10;
+    ctx.fillStyle=this.color;ctx.fillText(this.text,0,0);
+    ctx.restore();
+  }
+}
+
 class Powerup {
   constructor(x,y,type){this.x=x;this.y=y;this.w=24;this.h=24;this.type=type;this.life=600;}
   getRect(){return {x:this.x,y:this.y,w:this.w,h:this.h};}
@@ -502,6 +521,7 @@ function onBaseDestroyed(){
   baseRegenTimer=90;
   player.active=false;
   createExplosion(player.x,player.y,true);
+  floatingTexts.push(new FloatingText(player.x+player.w/2,player.y,'菜','#44ff44'));
   setTimeout(()=>{if(!gameOver){player=createPlayer();}},1000);
 }
 
@@ -697,6 +717,7 @@ function update(){
       if(player&&player.active&&bullet.active&&rectsOverlap(bullet.getRect(),player.getRect())){
         if(player.isInvincible()){bullet.active=false;return;}
         bullet.active=false;player.active=false;createExplosion(player.x,player.y,true);
+        floatingTexts.push(new FloatingText(player.x+player.w/2,player.y,'菜','#44ff44'));
         lives--;loseUpgrade();updateUI();
         if(lives<=0){gameOver=true;gameRunning=false;}
         else{setTimeout(()=>{if(!gameOver)player=createPlayer();},1000);}
@@ -717,8 +738,11 @@ function update(){
     updateUI();
   }});}
 
+  // Floating texts
+  floatingTexts.forEach(f=>f.update());
+
   // Cleanup
-  bullets=bullets.filter(b=>b.active);enemies=enemies.filter(e=>e.active);explosions=explosions.filter(e=>e.active);powerups=powerups.filter(p=>p.active);
+  bullets=bullets.filter(b=>b.active);enemies=enemies.filter(e=>e.active);explosions=explosions.filter(e=>e.active);powerups=powerups.filter(p=>p.active);floatingTexts=floatingTexts.filter(f=>f.active);
 
   // Win check
   if(totalEnemiesSpawned>=enemiesPerLevel&&enemies.filter(e=>e.active).length===0&&gameRunning&&!gameOver){
@@ -769,7 +793,7 @@ function draw(){
   }
   enemies.forEach(e=>{if(e.active){if(freezeTimer>0){ctx.save();ctx.globalAlpha=0.5;e.draw(ctx);ctx.restore();}else e.draw(ctx);}});
   if(player&&player.active){if(player.isInvincible()&&Math.floor(Date.now()/100)%2===0)player.draw(ctx);else if(!player.isInvincible())player.draw(ctx);}
-  bullets.forEach(b=>b.draw(ctx));explosions.forEach(e=>e.draw(ctx));powerups.forEach(p=>p.draw(ctx));
+  bullets.forEach(b=>b.draw(ctx));explosions.forEach(e=>e.draw(ctx));powerups.forEach(p=>p.draw(ctx));floatingTexts.forEach(f=>f.draw(ctx));
   if(player&&player.active&&player.isInvincible()){const rem=(player.invincibleUntil-Date.now())/3000;ctx.fillStyle='#00ffff';ctx.fillRect(player.x,player.y-6,player.w*Math.max(0,rem),3);}
   if(gamePaused&&!gameOver){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);}
   if(!gameRunning&&!gameOver&&!gamePaused){ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='bold 22px "Courier New"';ctx.textAlign='center';ctx.fillText('按 Enter 或 点击画面 开始',canvas.width/2,canvas.height/2+60);ctx.textAlign='start';}
