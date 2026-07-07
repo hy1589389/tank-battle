@@ -113,7 +113,6 @@ let freezeTimer = 0, speedBoostTimer = 0, rapidFireTimer = 0;
 let baseRegenTimer = 0;
 
 let player = null, enemies = [], bullets = [], explosions = [], powerups = [], map = [];
-let baseBricks = []; // positions of base-area destructible bricks for regen
 
 // ---- CONSTANTS ----
 const TILE_EMPTY = 0, TILE_BRICK = 1, TILE_STEEL = 2, TILE_BASE = 3, TILE_WALL = 4;
@@ -179,35 +178,19 @@ canvas.addEventListener('click', () => {
 
 // ---- LEVEL MAPS ----
 function defineBaseArea(m) {
-  // Base tiles
   m[ROWS-2][9] = TILE_BASE; m[ROWS-2][10] = TILE_BASE;
-  // Steel protection behind base
   m[ROWS-1][8] = TILE_STEEL; m[ROWS-1][9] = TILE_STEEL;
   m[ROWS-1][10] = TILE_STEEL; m[ROWS-1][11] = TILE_STEEL;
-  // Steel columns beside base
   m[ROWS-2][8] = TILE_STEEL; m[ROWS-2][11] = TILE_STEEL;
-  // Steel above base corners
   m[ROWS-3][9] = TILE_STEEL; m[ROWS-3][10] = TILE_STEEL;
-  // Destructible bricks around base (saved for regen)
-  baseBricks = [
-    [7,ROWS-2],[8,ROWS-3],[11,ROWS-3],[12,ROWS-2],
-    [8,ROWS-2],[11,ROWS-2],
-    [7,ROWS-3],[12,ROWS-3],
-    [7,ROWS-4],[8,ROWS-4],[9,ROWS-4],[10,ROWS-4],[11,ROWS-4],[12,ROWS-4],
-  ];
-  baseBricks.forEach(([c,r]) => { if (m[r][c] === TILE_EMPTY) m[r][c] = TILE_BRICK; });
 }
 
 function regenerateBase() {
-  // Restore base tiles
   map[ROWS-2][9] = TILE_BASE; map[ROWS-2][10] = TILE_BASE;
-  // Restore base steel
   map[ROWS-1][8] = TILE_STEEL; map[ROWS-1][9] = TILE_STEEL;
   map[ROWS-1][10] = TILE_STEEL; map[ROWS-1][11] = TILE_STEEL;
   map[ROWS-2][8] = TILE_STEEL; map[ROWS-2][11] = TILE_STEEL;
   map[ROWS-3][9] = TILE_STEEL; map[ROWS-3][10] = TILE_STEEL;
-  // Restore base bricks
-  baseBricks.forEach(([c,r]) => { if (map[r][c] === TILE_EMPTY) map[r][c] = TILE_BRICK; });
   baseRegenTimer = 0;
 }
 
@@ -255,6 +238,13 @@ function getLevelMap(n) {
   ];
   const b = bricks[(n - 1) % bricks.length];
   b.forEach(([c,r]) => { if (m[r] && m[r][c] === TILE_EMPTY) m[r][c] = TILE_BRICK; });
+
+  // Clear spawn area (cols 8-11, rows 12-13) so player never spawns inside a wall
+  for (let r = 12; r <= 13; r++) {
+    for (let c = 8; c <= 11; c++) {
+      if (m[r][c] === TILE_BRICK || m[r][c] === TILE_WALL) m[r][c] = TILE_EMPTY;
+    }
+  }
 
   return m;
 }
@@ -389,7 +379,14 @@ function destroyTile(col,row){
 
 function createPlayer(){
   const lv=playerUpgrade;
-  const p=new Tank(TILE*9+2,TILE*13+2,DIR_UP,UPGRADE_COLORS[lv-1],true);
+  let sy=TILE*13+2, sx=TILE*9+2;
+  // Safety: if spawn area is blocked, try moving up
+  for(let attempt=0;attempt<6;attempt++){
+    const tr={x:sx,y:sy,w:TILE-4,h:TILE-4};
+    if(!rectCollidesMap(tr))break;
+    sy-=TILE;
+  }
+  const p=new Tank(sx,sy,DIR_UP,UPGRADE_COLORS[lv-1],true);
   p.invincibleUntil=Date.now()+3000;
   p.speed=2.5+(lv-1)*0.4;
   p.shootDelay=Math.max(8,20-(lv-1)*2);
