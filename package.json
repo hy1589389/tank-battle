@@ -1,0 +1,12 @@
+{
+  "name": "tank-battle",
+  "version": "2.0.0",
+  "description": "经典坦克大战 - 支持局域网多人对战",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
