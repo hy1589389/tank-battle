@@ -2,12 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta http-equiv="Cache-Control" content="no-cache">
 <title>坦克大战 - Tank Battle v2</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
-  html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2e;font-family:'Courier New',monospace;user-select:none;-webkit-user-select:none;touch-action:manipulation;}
+  html,body{width:100%;height:100%;height:100dvh;overflow:hidden;position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;font-family:'Courier New',monospace;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;-webkit-overflow-scrolling:none;touch-action:manipulation;overscroll-behavior:none;-webkit-user-drag:none;}
   body{display:flex;justify-content:center;align-items:center;}
   .game-wrapper{display:flex;gap:20px;align-items:stretch;}
   .side-panel{background:#16213e;border:3px solid #0f3460;border-radius:12px;padding:18px 22px;color:#e94560;display:flex;flex-direction:column;justify-content:flex-start;gap:12px;min-width:185px;max-width:195px;}
@@ -183,6 +185,12 @@ function setupTouch(){
     updateUI();
   },{passive:false});
 }
+
+// iOS Safari: block body scroll + pull-to-refresh
+document.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+document.addEventListener('gesturestart',e=>{e.preventDefault();},{passive:false});
+document.addEventListener('gesturechange',e=>{e.preventDefault();},{passive:false});
+document.addEventListener('gestureend',e=>{e.preventDefault();},{passive:false});
 
 const POWERUP_TYPES={
   LIFE:{id:'life',label:'💚',color:'#2ecc71',weight:20},
