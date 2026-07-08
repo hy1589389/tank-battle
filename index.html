@@ -235,7 +235,6 @@ document.addEventListener('gestureend',e=>{e.preventDefault();},{passive:false})
 
 // ==================== MODE SELECT ====================
 function showTouchUI(){
-  if(window.innerWidth>768)return;
   document.getElementById('touchControls').style.display='block';
   document.getElementById('mobileHint').style.display='block';
 }
