@@ -56,12 +56,12 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
 .controls-info span{color:#f5c518;}
 .status-msg{text-align:center;font-size:12px;font-weight:bold;min-height:18px;letter-spacing:1px;}
 .divider{border-top:1px solid #0f3460;}
-.touch-controls{display:none;position:fixed;bottom:0;left:0;right:0;height:220px;pointer-events:none;z-index:10;}
-.touch-joystick{position:absolute;bottom:30px;left:20px;width:110px;height:110px;pointer-events:auto;}
-.touch-joystick .base{width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,0.08);border:3px solid rgba(255,255,255,0.2);position:relative;}
-.touch-joystick .thumb{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.4);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transition:transform 0.05s;}
-.touch-shoot{position:absolute;bottom:45px;right:30px;width:100px;height:100px;border-radius:50%;background:rgba(255,60,60,0.18);border:3px solid rgba(255,60,60,0.5);pointer-events:auto;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:rgba(255,255,255,0.85);letter-spacing:2px;}
-.touch-shoot:active{background:rgba(255,60,60,0.4);}
+.touch-controls{display:none;position:fixed;bottom:0;left:0;right:0;height:220px;pointer-events:none;z-index:999;}
+.touch-joystick{position:absolute;bottom:30px;left:20px;width:120px;height:120px;pointer-events:auto;}
+.touch-joystick .base{width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,0.15);border:4px solid rgba(255,255,255,0.5);position:relative;box-shadow:0 0 20px rgba(255,255,255,0.1);}
+.touch-joystick .thumb{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.5);border:3px solid rgba(255,255,255,0.8);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transition:transform 0.05s;box-shadow:0 0 12px rgba(255,255,255,0.3);}
+.touch-shoot{position:absolute;bottom:35px;right:20px;width:110px;height:110px;border-radius:50%;background:rgba(255,50,50,0.35);border:4px solid rgba(255,80,80,0.7);pointer-events:auto;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:#fff;letter-spacing:2px;box-shadow:0 0 20px rgba(255,50,50,0.2);}
+.touch-shoot:active{background:rgba(255,50,50,0.6);}
 #mobileHint{display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.5);font-size:12px;z-index:5;pointer-events:none;}
 
 /* Desktop: no touch */
@@ -243,7 +243,7 @@ function hideTouchUI(){
   document.getElementById('mobileHint').style.display='none';
 }
 function startSinglePlayer(){
-  gameMode='single';hideTouchUI();
+  gameMode='single';
   document.getElementById('modeScreen').style.display='none';
   document.getElementById('gameWrapper').style.display='flex';
   document.getElementById('panelTitle').textContent='坦 克 大 战';
@@ -251,6 +251,7 @@ function startSinglePlayer(){
   document.getElementById('xpStat').style.display='';
   document.getElementById('statusMsg').textContent='按Enter/点击开始';
   resetGame();
+  showTouchUI();
 }
 function showLobby(){
   document.getElementById('modeScreen').style.display='none';
