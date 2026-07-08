@@ -77,7 +77,7 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
   .side-panel .stat:last-of-type{flex:1.5 1.5 0;}
   .side-panel .status-msg{display:none;}
   canvas{max-width:96vw;max-height:52vh;border-width:2px;width:auto;height:auto;}
-  #mobileHint{display:block;}.touch-controls{display:block;}
+  #mobileHint{display:none;}.touch-controls{display:none;}.touch-controls.active{display:block;}#mobileHint.active{display:block;}
   .buff-indicator{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:10px;padding:2px 8px;white-space:nowrap;z-index:5;}
   #livesDisplay{display:block;text-align:center;white-space:nowrap;min-width:95px;}
   .xp-bar-outer{width:80px;height:5px;}.xp-bar-inner{height:5px;}
@@ -150,7 +150,7 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
   <canvas id="gameCanvas"></canvas>
 </div>
 
-<div class="touch-controls" id="touchControls" style="display:none">
+<div class="touch-controls" id="touchControls">
   <div class="touch-joystick" id="joystick"><div class="base"></div><div class="thumb" id="joyThumb"></div></div>
   <div class="touch-shoot" id="touchShoot">射击</div>
 </div>
@@ -207,7 +207,7 @@ document.addEventListener('touchstart',e=>{
     e.preventDefault();touchShooting=true;
   }else if(t.closest('canvas')&&gameMode==='single'){
     e.preventDefault();
-    if(gameOver)resetGame();else{gamePaused=!gamePaused;if(!gameRunning)gameRunning=true;}updateUI();
+    if(gameOver){resetGame();showTouchUI();}else{gamePaused=!gamePaused;if(!gameRunning){gameRunning=true;showTouchUI();}}updateUI();
   }
 },{passive:false});
 
@@ -232,8 +232,17 @@ document.addEventListener('gesturechange',e=>{e.preventDefault();},{passive:fals
 document.addEventListener('gestureend',e=>{e.preventDefault();},{passive:false});
 
 // ==================== MODE SELECT ====================
+function showTouchUI(){
+  const isMobile=window.innerWidth<=768;
+  document.getElementById('touchControls').classList.toggle('active',isMobile);
+  document.getElementById('mobileHint').classList.toggle('active',isMobile);
+}
+function hideTouchUI(){
+  document.getElementById('touchControls').classList.remove('active');
+  document.getElementById('mobileHint').classList.remove('active');
+}
 function startSinglePlayer(){
-  gameMode='single';
+  gameMode='single';hideTouchUI();
   document.getElementById('modeScreen').style.display='none';
   document.getElementById('gameWrapper').style.display='flex';
   document.getElementById('panelTitle').textContent='坦 克 大 战';
@@ -258,7 +267,9 @@ function createRoom(){
   ws.send(JSON.stringify({type:'create_room',name:'主机'}));
 }
 function backToMode(){
+  hideTouchUI();
   document.getElementById('lobbyScreen').style.display='none';
+  document.getElementById('gameWrapper').style.display='none';
   document.getElementById('modeScreen').style.display='flex';
   if(ws){ws.close();ws=null;}
 }
@@ -334,7 +345,7 @@ function startMultiPlayerGame(m){
   score=0;enemiesRemaining=multiPlayers.filter(p=>p.alive).length-1;enemiesPerLevel=99;totalEnemiesSpawned=0;
   gameRunning=true;gameOver=false;gamePaused=false;level=0;
   if(gameMode==='multi-host')enemiesRemaining=multiPlayers.filter(p=>p.id!==myPlayerId).length;
-  updateUI();
+  showTouchUI();updateUI();
 }
 function resetMultiLobby(players){
   _hostPlayerList=players.filter(p=>p.id!==myPlayerId).map(p=>({id:p.id,name:p.name,color:p.color}));
@@ -343,6 +354,7 @@ function resetMultiLobby(players){
   else{document.getElementById('joinView').style.display='flex';document.getElementById('lobbyChoice').style.display='none';updateJoinPlayerList(players);}
   gameRunning=false;gameOver=false;gamePaused=false;
   gameMode='';document.getElementById('gameWrapper').style.display='none';
+  hideTouchUI();
 }
 
 function createMultiTank(x,y,color,pid){
@@ -394,7 +406,7 @@ class Powerup{constructor(x,y,type){this.x=x;this.y=y;this.w=24;this.h=24;this.t
 const keys={};
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
-  if(gameMode==='single'){if(e.key==='Enter'){if(gameOver)resetGame();else{gamePaused=!gamePaused;if(!gameRunning)gameRunning=true;}updateUI();}if(e.key==='r'||e.key==='R')resetGame();}
+  if(gameMode==='single'){if(e.key==='Enter'){if(gameOver){resetGame();showTouchUI();}else{gamePaused=!gamePaused;if(!gameRunning){gameRunning=true;showTouchUI();}}updateUI();}if(e.key==='r'||e.key==='R')resetGame();}
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){
     if(e.key==='Enter')joinRoom();
     return;
@@ -402,7 +414,7 @@ document.addEventListener('keydown',e=>{
   e.preventDefault();
 });
 document.addEventListener('keyup',e=>{keys[e.key]=false;if(e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA')e.preventDefault();});
-canvas.addEventListener('click',()=>{if(gameMode==='single'){if(gameOver)resetGame();else{gamePaused=!gamePaused;if(!gameRunning)gameRunning=true;}updateUI();}});
+canvas.addEventListener('click',()=>{if(gameMode==='single'){if(gameOver){resetGame();showTouchUI();}else{gamePaused=!gamePaused;if(!gameRunning){gameRunning=true;showTouchUI();}}updateUI();}});
 
 // ==================== LEVEL MAPS ====================
 function defineBaseArea(m){m[ROWS-2][9]=TILE_BASE;m[ROWS-2][10]=TILE_BASE;m[ROWS-1][8]=TILE_STEEL;m[ROWS-1][9]=TILE_STEEL;m[ROWS-1][10]=TILE_STEEL;m[ROWS-1][11]=TILE_STEEL;m[ROWS-2][8]=TILE_STEEL;m[ROWS-2][11]=TILE_STEEL;m[ROWS-3][9]=TILE_STEEL;m[ROWS-3][10]=TILE_STEEL;}
@@ -424,7 +436,7 @@ function resetGame(){
   enemySpawnTimer=0;freezeTimer=0;speedBoostTimer=0;rapidFireTimer=0;baseRegenTimer=0;
   map=getLevelMap(level);player=createPlayer();
   document.getElementById('gameWrapper').style.display='flex';
-  updateUI();
+  showTouchUI();updateUI();
 }
 function createPlayer(){const lv=playerUpgrade;let sy=TILE*13+2,sx=TILE*9+2;for(let i=0;i<6;i++){if(!rectCollidesMap({x:sx,y:sy,w:TILE-4,h:TILE-4}))break;sy-=TILE;}const p=new Tank(sx,sy,DIR_UP,UPGRADE_COLORS[lv-1],true,null);p.invincibleUntil=Date.now()+3000;p.speed=2.5+(lv-1)*0.4;p.shootDelay=Math.max(14,30-(lv-1)*2);p.maxBullets=lv>=6?3:lv>=3?2:1;p.playerId='local';return p;}
 function nextLevel(){level++;enemiesPerLevel=16+level*4;totalEnemiesSpawned=0;enemiesRemaining=enemiesPerLevel;maxEnemiesOnScreen=Math.min(8,5+Math.floor((level-1)/1.5));enemySpawnInterval=Math.max(40,90-level*8);enemies=[];bullets=[];powerups=[];explosions=[];floatingTexts=[];enemySpawnTimer=0;freezeTimer=0;speedBoostTimer=0;rapidFireTimer=0;baseRegenTimer=0;map=getLevelMap(level);player=createPlayer();updateUI();}
