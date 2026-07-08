@@ -101,9 +101,18 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
   <div class="back" onclick="backToMode()">← 返回</div>
   <h1 style="font-size:24px">🌐 局 域 网 对 战</h1>
 
-  <!-- Host view -->
-  <div id="hostView" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
-    <div class="subtitle">创建房间，把房间码发给朋友</div>
+  <!-- Lobby choice: host or join? -->
+  <div id="lobbyChoice" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <button class="btn green" onclick="createRoom()">🏠 创建房间</button>
+    <div class="subtitle">— 或 —</div>
+    <input class="input" type="text" id="roomCodeInput" placeholder="输入4位房间码" maxlength="4" autocomplete="off" spellcheck="false" autocomplete="off">
+    <button class="btn" onclick="joinRoom()">🚪 加入房间</button>
+    <div class="error" id="lobbyError"></div>
+  </div>
+
+  <!-- Host view (after room created) -->
+  <div id="hostView" style="display:none;flex-direction:column;align-items:center;gap:16px;">
+    <div class="subtitle">把房间码发给朋友</div>
     <div class="code" id="roomCodeDisplay">----</div>
     <div class="subtitle">房间码</div>
     <div class="player-list" id="hostPlayerList"></div>
@@ -111,10 +120,10 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
     <div class="error" id="hostError"></div>
   </div>
 
-  <!-- Join view -->
-  <div id="joinView" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
-    <input class="input" type="text" id="roomCodeInput" placeholder="输入4位房间码" maxlength="4" autocomplete="off">
-    <button class="btn green" onclick="joinRoom()">加入房间</button>
+  <!-- Join view (after joined) -->
+  <div id="joinView" style="display:none;flex-direction:column;align-items:center;gap:16px;">
+    <div class="subtitle">已加入房间</div>
+    <div class="code" id="joinedRoomCode">----</div>
     <div class="player-list" id="joinPlayerList"></div>
     <div class="hint" id="joinWait">等待主机开始游戏...</div>
     <div class="error" id="joinError"></div>
@@ -213,9 +222,17 @@ function startSinglePlayer(){
 function showLobby(){
   document.getElementById('modeScreen').style.display='none';
   document.getElementById('lobbyScreen').style.display='flex';
-  document.getElementById('joinView').style.display='none';
+  document.getElementById('lobbyChoice').style.display='flex';
   document.getElementById('hostView').style.display='none';
+  document.getElementById('joinView').style.display='none';
+  document.getElementById('lobbyError').textContent='';
+  document.getElementById('hostError').textContent='';
+  document.getElementById('joinError').textContent='';
   connectWS();
+}
+function createRoom(){
+  if(!ws||ws.readyState!==1){document.getElementById('lobbyError').textContent='未连接到服务器';return;}
+  ws.send(JSON.stringify({type:'create_room',name:'主机'}));
 }
 function backToMode(){
   document.getElementById('lobbyScreen').style.display='none';
@@ -229,12 +246,12 @@ let ws=null,roomCode='',isHost=false;
 function connectWS(){
   const proto=location.protocol==='https:'?'wss:':'ws:';
   ws=new WebSocket(proto+'//'+location.host);
-  ws.onopen=()=>{document.getElementById('hostView').style.display='flex';document.getElementById('joinView').style.display='flex';};
+  ws.onopen=()=>{document.getElementById('lobbyChoice').style.display='flex';};
   ws.onmessage=e=>{
     const m=JSON.parse(e.data);
     switch(m.type){
-      case'room_created':roomCode=m.roomCode;myPlayerId=m.playerId;isHost=true;document.getElementById('roomCodeDisplay').textContent=roomCode;document.getElementById('joinView').style.display='none';updateHostPlayers([{id:m.playerId,name:'主机 (你)',color:'#4ecdc4'}]);document.getElementById('hostError').textContent='';break;
-      case'joined_room':myPlayerId=m.playerId;isHost=false;roomCode=m.roomCode;document.getElementById('hostView').style.display='none';document.getElementById('roomCodeInput').value=roomCode;updateJoinPlayers(m.players);document.getElementById('joinError').textContent='';document.getElementById('joinWait').style.display='block';break;
+      case'room_created':roomCode=m.roomCode;myPlayerId=m.playerId;isHost=true;document.getElementById('roomCodeDisplay').textContent=roomCode;document.getElementById('lobbyChoice').style.display='none';document.getElementById('joinView').style.display='none';document.getElementById('hostView').style.display='flex';updateHostPlayers([{id:m.playerId,name:'主机 (你)',color:'#4ecdc4'}]);document.getElementById('hostError').textContent='';break;
+      case'joined_room':myPlayerId=m.playerId;isHost=false;roomCode=m.roomCode;document.getElementById('joinedRoomCode').textContent=m.roomCode;document.getElementById('lobbyChoice').style.display='none';document.getElementById('hostView').style.display='none';document.getElementById('joinView').style.display='flex';updateJoinPlayerList(m.players);document.getElementById('joinError').textContent='';document.getElementById('joinWait').style.display='block';break;
       case'player_joined':if(isHost)updateHostPlayersByJoin(m);break;
       case'player_left':if(isHost)removeHostPlayer(m.playerId);else removeJoinPlayer(m.playerId);break;
       case'game_start':startMultiPlayerGame(m);break;
@@ -247,7 +264,7 @@ function connectWS(){
       case'game_over':multiWinner=m.winner;multiScores=m.scores;gameOver=true;gameRunning=false;updateUI();break;
       case'back_to_lobby':resetMultiLobby(m.players);break;
       case'room_closed':if(gameMode.startsWith('multi')){alert('主机断开了连接');backToMode();}break;
-      case'error':if(isHost)document.getElementById('hostError').textContent=m.message;else document.getElementById('joinError').textContent=m.message;break;
+      case'error':if(!isHost&&!myPlayerId)document.getElementById('lobbyError').textContent=m.message;else if(isHost)document.getElementById('hostError').textContent=m.message;else document.getElementById('joinError').textContent=m.message;break;
       case'input':if(gameMode==='multi-host'){remoteInputs[m.playerId]={dir:m.dir,shoot:m.shoot};}break;
     }
   };
@@ -257,8 +274,8 @@ function connectWS(){
 
 function joinRoom(){
   const code=document.getElementById('roomCodeInput').value.toUpperCase();
-  if(code.length!==4){document.getElementById('joinError').textContent='请输入4位房间码';return;}
-  if(!ws||ws.readyState!==1){document.getElementById('joinError').textContent='未连接到服务器';return;}
+  if(code.length!==4){document.getElementById('lobbyError').textContent='请输入4位房间码';return;}
+  if(!ws||ws.readyState!==1){document.getElementById('lobbyError').textContent='未连接到服务器，请稍等';return;}
   ws.send(JSON.stringify({type:'join_room',roomCode:code,name:'玩家'}));
 }
 function startMultiGame(){
@@ -298,9 +315,11 @@ function startMultiPlayerGame(m){
 }
 function resetMultiLobby(players){
   _hostPlayerList=players.filter(p=>p.id!==myPlayerId).map(p=>({id:p.id,name:p.name,color:p.color}));
-  if(isHost){updateHostPlayers([{id:myPlayerId,name:'主机 (你)',color:'#4ecdc4'},..._hostPlayerList]);document.getElementById('startBtn').disabled=false;}else{updateJoinPlayerList(players);}
+  document.getElementById('lobbyScreen').style.display='flex';
+  if(isHost){document.getElementById('hostView').style.display='flex';document.getElementById('lobbyChoice').style.display='none';updateHostPlayers([{id:myPlayerId,name:'主机 (你)',color:'#4ecdc4'},..._hostPlayerList]);document.getElementById('startBtn').disabled=false;}
+  else{document.getElementById('joinView').style.display='flex';document.getElementById('lobbyChoice').style.display='none';updateJoinPlayerList(players);}
   gameRunning=false;gameOver=false;gamePaused=false;
-  gameMode='';document.getElementById('gameWrapper').style.display='none';document.getElementById('lobbyScreen').style.display='flex';
+  gameMode='';document.getElementById('gameWrapper').style.display='none';
 }
 
 function createMultiTank(x,y,color,pid){
