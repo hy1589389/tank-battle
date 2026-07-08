@@ -25,7 +25,7 @@ body{display:flex;justify-content:center;align-items:center;}
 .btn.green{background:#27ae60;border-color:#2ecc71;}
 .btn.green:hover{background:#2ecc71;}
 .btn:disabled{opacity:0.4;cursor:not-allowed;}
-.input{background:#0a0a1e;border:2px solid #1a5276;color:#fff;font-size:16px;padding:12px 16px;border-radius:8px;text-align:center;letter-spacing:2px;font-family:inherit;width:200px;text-transform:uppercase;}
+.input{background:#0a0a1e;border:2px solid #1a5276;color:#fff;font-size:16px;padding:12px 16px;border-radius:8px;text-align:center;letter-spacing:2px;font-family:inherit;width:200px;text-transform:uppercase;user-select:text;-webkit-user-select:text;}
 .input::placeholder{color:#444;text-transform:none;letter-spacing:1px;}
 .code{font-size:48px;color:#f5c518;letter-spacing:12px;font-weight:bold;text-shadow:0 0 15px rgba(245,197,24,0.4);}
 .player-list{display:flex;flex-direction:column;gap:8px;min-width:250px;max-height:200px;overflow-y:auto;}
@@ -105,7 +105,7 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
   <div id="lobbyChoice" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
     <button class="btn green" onclick="createRoom()">🏠 创建房间</button>
     <div class="subtitle">— 或 —</div>
-    <input class="input" type="text" id="roomCodeInput" placeholder="输入4位房间码" maxlength="4" autocomplete="off" spellcheck="false" autocomplete="off">
+    <input class="input" type="text" id="roomCodeInput" placeholder="输入4位房间码" maxlength="4" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" inputmode="text">
     <button class="btn" onclick="joinRoom()">🚪 加入房间</button>
     <div class="error" id="lobbyError"></div>
   </div>
@@ -203,7 +203,7 @@ function setupTouch(){
   canvas.addEventListener('touchstart',e=>{e.preventDefault();if(gameOver)resetGame();else{gamePaused=!gamePaused;if(!gameRunning)gameRunning=true;}updateUI();},{passive:false});
 }
 setupTouch();
-document.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+document.addEventListener('touchmove',e=>{if(e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA')e.preventDefault();},{passive:false});
 document.addEventListener('gesturestart',e=>{e.preventDefault();},{passive:false});
 document.addEventListener('gesturechange',e=>{e.preventDefault();},{passive:false});
 document.addEventListener('gestureend',e=>{e.preventDefault();},{passive:false});
@@ -372,9 +372,13 @@ const keys={};
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
   if(gameMode==='single'){if(e.key==='Enter'){if(gameOver)resetGame();else{gamePaused=!gamePaused;if(!gameRunning)gameRunning=true;}updateUI();}if(e.key==='r'||e.key==='R')resetGame();}
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){
+    if(e.key==='Enter')joinRoom();
+    return;
+  }
   e.preventDefault();
 });
-document.addEventListener('keyup',e=>{keys[e.key]=false;e.preventDefault();});
+document.addEventListener('keyup',e=>{keys[e.key]=false;if(e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA')e.preventDefault();});
 canvas.addEventListener('click',()=>{if(gameMode==='single'){if(gameOver)resetGame();else{gamePaused=!gamePaused;if(!gameRunning)gameRunning=true;}updateUI();}});
 
 // ==================== LEVEL MAPS ====================
