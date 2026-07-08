@@ -64,9 +64,11 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
 .touch-shoot:active{background:rgba(255,60,60,0.4);}
 #mobileHint{display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.5);font-size:12px;z-index:5;pointer-events:none;}
 
+/* Desktop: no touch */
 @media(min-width:769px){
-  .side-panel{display:flex;}.controls-info{display:block;}.touch-controls{display:none!important;}#mobileHint{display:none!important;}
+  .side-panel{display:flex;}.controls-info{display:block;}#touchControls{display:none!important;}#mobileHint{display:none!important;}
 }
+/* Mobile */
 @media(max-width:768px){
   body{align-items:flex-start;padding-top:8px;}
   .game-wrapper{flex-direction:column;align-items:center;gap:6px;}
@@ -77,7 +79,7 @@ canvas{border:3px solid #0f3460;border-radius:8px;image-rendering:pixelated;back
   .side-panel .stat:last-of-type{flex:1.5 1.5 0;}
   .side-panel .status-msg{display:none;}
   canvas{max-width:96vw;max-height:52vh;border-width:2px;width:auto;height:auto;}
-  #mobileHint{display:none;}.touch-controls{display:none;}.touch-controls.active{display:block;}#mobileHint.active{display:block;}
+  #touchControls{display:none;}#mobileHint{display:none;}
   .buff-indicator{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:10px;padding:2px 8px;white-space:nowrap;z-index:5;}
   #livesDisplay{display:block;text-align:center;white-space:nowrap;min-width:95px;}
   .xp-bar-outer{width:80px;height:5px;}.xp-bar-inner{height:5px;}
@@ -233,13 +235,13 @@ document.addEventListener('gestureend',e=>{e.preventDefault();},{passive:false})
 
 // ==================== MODE SELECT ====================
 function showTouchUI(){
-  const isMobile=window.innerWidth<=768;
-  document.getElementById('touchControls').classList.toggle('active',isMobile);
-  document.getElementById('mobileHint').classList.toggle('active',isMobile);
+  if(window.innerWidth>768)return;
+  document.getElementById('touchControls').style.display='block';
+  document.getElementById('mobileHint').style.display='block';
 }
 function hideTouchUI(){
-  document.getElementById('touchControls').classList.remove('active');
-  document.getElementById('mobileHint').classList.remove('active');
+  document.getElementById('touchControls').style.display='none';
+  document.getElementById('mobileHint').style.display='none';
 }
 function startSinglePlayer(){
   gameMode='single';hideTouchUI();
