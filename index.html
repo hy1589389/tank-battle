@@ -282,9 +282,21 @@ function backToMode(){
 let ws=null,roomCode='',isHost=false;
 
 function connectWS(){
+  document.getElementById('lobbyChoice').style.display='none';
+  document.getElementById('lobbyError').textContent='正在连接服务器...';
   const proto=location.protocol==='https:'?'wss:':'ws:';
   ws=new WebSocket(proto+'//'+location.host);
-  ws.onopen=()=>{document.getElementById('lobbyChoice').style.display='flex';};
+  // 3秒超时：如果还没连上就提示
+  const timeout=setTimeout(()=>{
+    if(ws.readyState!==1){
+      if(location.host.includes('github.io')){
+        document.getElementById('lobbyError').textContent='GitHub Pages 不能运行服务器。请在电脑上运行 server.js，然后手机/浏览器打开 http://电脑IP:3000';
+      }else{
+        document.getElementById('lobbyError').textContent='未连接到服务器，请在电脑上运行 node server.js';
+      }
+    }
+  },3000);
+  ws.onopen=()=>{clearTimeout(timeout);document.getElementById('lobbyChoice').style.display='flex';document.getElementById('lobbyError').textContent='';};
   ws.onmessage=e=>{
     const m=JSON.parse(e.data);
     switch(m.type){
